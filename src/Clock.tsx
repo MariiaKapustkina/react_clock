@@ -2,7 +2,6 @@ import React from 'react';
 
 type State = {
   today: Date;
-  clockName: string;
 };
 
 type Props = {
@@ -11,20 +10,28 @@ type Props = {
 };
 
 function getRandomName(): string {
-  const value = Date.now().toString().slice(-4);
-
-  return `Clock-${value}`;
+  return `Clock-${Date.now().toString().slice(-4)}`;
 }
 
 export class Clock extends React.Component<Props, State> {
   state: Readonly<State> = {
     today: new Date(),
-    clockName: this.props.name,
   };
 
   timerId: number | null = null;
 
-  nameTimerId: number | null = null;
+  nameTimeoutId: number | null = null;
+
+  updateName = () => {
+    const newName = getRandomName();
+    const oldName = this.props.name;
+
+    // eslint-disable-next-line no-console
+    console.warn(`Renamed from ${oldName} to ${newName}`);
+    this.props.onNameChange(newName);
+
+    this.nameTimeoutId = window.setTimeout(this.updateName, 3300);
+  };
 
   componentDidMount() {
     this.timerId = window.setInterval(() => {
@@ -36,18 +43,7 @@ export class Clock extends React.Component<Props, State> {
       console.log(currentTime.toUTCString().slice(-12, -4));
     }, 1000);
 
-    this.nameTimerId = window.setInterval(() => {
-      const newName = getRandomName();
-      const oldName = this.state.clockName;
-
-      this.setState(() => ({
-        clockName: newName,
-      }));
-      this.props.onNameChange(newName);
-
-      // eslint-disable-next-line no-console
-      console.log(`Renamed from ${oldName} to ${newName}`);
-    }, 3300);
+    this.nameTimeoutId = window.setTimeout(this.updateName, 3300);
   }
 
   componentWillUnmount() {
@@ -55,27 +51,16 @@ export class Clock extends React.Component<Props, State> {
       clearInterval(this.timerId);
     }
 
-    if (this.nameTimerId) {
-      clearInterval(this.nameTimerId);
-    }
-  }
-
-  componentDidUpdate(prevProps: Props, prevState: State) {
-    if (prevState.clockName !== this.state.clockName) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `Renamed from ${prevState.clockName} to ${this.state.clockName}`,
-      );
+    if (this.nameTimeoutId) {
+      clearTimeout(this.nameTimeoutId);
     }
   }
 
   render() {
     return (
       <div className="Clock">
-        <strong className="Clock__name">{this.state.clockName}</strong>
-
+        <strong className="Clock__name">{this.props.name}</strong>
         {' time is '}
-
         <span className="Clock__time">
           {this.state.today.toUTCString().slice(-12, -4)}
         </span>
